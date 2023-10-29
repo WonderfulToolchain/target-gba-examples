@@ -77,7 +77,7 @@ ASFLAGS		+= -x assembler-with-cpp $(DEFINES) $(WF_ARCH_CFLAGS) \
 CFLAGS		+= -std=gnu11 $(WARNFLAGS) $(DEFINES) $(WF_ARCH_CFLAGS) \
 		   $(INCLUDEFLAGS) -ffunction-sections -fdata-sections -O2
 
-LDFLAGS		:= -T$(WF_LDSCRIPT) $(LIBDIRSFLAGS) -nostdlib \
+LDFLAGS		:= $(LIBDIRSFLAGS) -nostdlib \
 		   -Wl,-Map,$(MAP) -Wl,--gc-sections \
 		   $(WF_ARCH_LDFLAGS) $(LIBS) -lgcc
 
@@ -103,18 +103,13 @@ DEPS		:= $(OBJS:.o=.d)
 
 all: $(ROM) compile_commands.json
 
-$(ROM): $(ELF)
+$(ROM) $(ELF): $(OBJS)
 	@echo "  ROM     $@"
-	$(_V)$(OBJCOPY) -O binary $< $@
-	$(_V)wf-gbatool fix -v $(BUILDROMFLAGS) $@ || rm $@
-
-$(ELF): $(OBJS)
-	@echo "  LD      $@"
-	$(_V)$(CC) -o $(ELF) $(OBJS) $(WF_CRT0) $(LDFLAGS)
+	$(_V)$(ROMLINK) -o $(ROM) --output-elf $(ELF) $(ROMLINKFLAGS) -v -- $(OBJS) $(WF_CRT0) $(LDFLAGS)
 
 clean:
 	@echo "  CLEAN"
-	$(_V)$(RM) $(ROM) $(BUILDDIR) compile_commands.json
+	$(_V)$(RM) $(ELF) $(ROM) $(BUILDDIR) compile_commands.json
 
 compile_commands.json: $(OBJS) | Makefile
 	@echo "  MERGE   compile_commands.json"

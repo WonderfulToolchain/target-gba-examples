@@ -1,9 +1,0 @@
-{
-    "clangd.arguments": [
-        "--query-driver=/opt/wonderful/toolchain/gcc-arm-none-eabi/bin/arm-none-eabi-gcc"
-    ],
-    "Lua.misc.executablePath": "/opt/wonderful/bin/wf-lua",
-    "Lua.workspace.library": [
-        "/opt/wonderful/lib/lua/5.4"
-    ]
-}
