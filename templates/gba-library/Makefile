@@ -3,13 +3,8 @@
 # SPDX-FileContributor: Adrian "asie" Siekierka, 2023
 
 WONDERFUL_TOOLCHAIN ?= /opt/wonderful
-TARGET = gba/rom
+TARGET ?= gba/rom
 include $(WONDERFUL_TOOLCHAIN)/target/$(TARGET)/makedefs.mk
-
-# Metadata
-# --------
-
-NAME		:= example
 
 # Source code paths
 # -----------------
@@ -17,7 +12,6 @@ NAME		:= example
 INCLUDEDIRS	:= include
 SOURCEDIRS	:= src
 ASSETDIRS	:= assets
-CBINDIRS	:= cbin
 
 # Defines passed to all files
 # ---------------------------
@@ -33,10 +27,9 @@ LIBDIRS		:= $(WF_ARCH_LIBDIRS)
 # Build artifacts
 # ---------------
 
-BUILDDIR	:= build
-ELF		:= build/$(NAME).elf
-MAP		:= build/$(NAME).map
-ROM		:= $(NAME).gba
+NAME		:= example
+BUILDDIR	:= build/$(TARGET)
+ARCHIVE		:= $(BUILDDIR)/lib$(NAME).a
 
 # Verbose flag
 # ------------
@@ -53,10 +46,6 @@ endif
 ifneq ($(ASSETDIRS),)
     SOURCES_WFPROCESS	:= $(shell find -L $(ASSETDIRS) -name "*.lua")
     INCLUDEDIRS		+= $(addprefix $(BUILDDIR)/,$(ASSETDIRS))
-endif
-ifneq ($(CBINDIRS),)
-    SOURCES_CBIN	:= $(shell find -L $(CBINDIRS) -name "*.bin")
-    INCLUDEDIRS		+= $(addprefix $(BUILDDIR)/,$(CBINDIRS))
 endif
 SOURCES_S	:= $(shell find -L $(SOURCEDIRS) -name "*.s")
 SOURCES_C	:= $(shell find -L $(SOURCEDIRS) -name "*.c")
@@ -75,19 +64,13 @@ ASFLAGS		+= -x assembler-with-cpp $(DEFINES) $(WF_ARCH_CFLAGS) \
 		   $(INCLUDEFLAGS) -ffunction-sections -fdata-sections
 
 CFLAGS		+= -std=gnu2x $(WARNFLAGS) $(DEFINES) $(WF_ARCH_CFLAGS) \
-		   $(INCLUDEFLAGS) -ffunction-sections -fdata-sections -O2
-
-LDFLAGS		:= $(LIBDIRSFLAGS) -nostdlib \
-		   -Wl,-Map,$(MAP) -Wl,--gc-sections \
-		   $(WF_ARCH_LDFLAGS) $(LIBS) -lgcc
-
-BUILDROMFLAGS	:=
+		   $(INCLUDEFLAGS) -ffunction-sections -fdata-sections -O2 \
+		   -flto -ffat-lto-objects
 
 # Intermediate build files
 # ------------------------
 
-OBJS_ASSETS	:= $(addsuffix .o,$(addprefix $(BUILDDIR)/,$(SOURCES_CBIN))) \
-		   $(addsuffix .o,$(addprefix $(BUILDDIR)/,$(SOURCES_WFPROCESS)))
+OBJS_ASSETS	:= $(addsuffix .o,$(addprefix $(BUILDDIR)/,$(SOURCES_WFPROCESS)))
 
 OBJS_SOURCES	:= $(addsuffix .o,$(addprefix $(BUILDDIR)/,$(SOURCES_S))) \
 		   $(addsuffix .o,$(addprefix $(BUILDDIR)/,$(SOURCES_C)))
@@ -99,21 +82,30 @@ DEPS		:= $(OBJS:.o=.d)
 # Targets
 # -------
 
-.PHONY: all clean
+.PHONY: all clean doc
 
-all: $(ROM) compile_commands.json
+all: $(ARCHIVE) compile_commands.json
 
-$(ROM) $(ELF): $(OBJS)
-	@echo "  ROM     $@"
-	$(_V)$(ROMLINK) -o $(ROM) --output-elf $(ELF) $(ROMLINKFLAGS) -v -- $(OBJS) $(WF_CRT0) $(LDFLAGS)
+$(ARCHIVE): $(OBJS)
+	@echo "  AR      $@"
+	@$(MKDIR) -p $(@D)
+	$(_V)$(AR) rcs $@ $(OBJS)
 
 clean:
 	@echo "  CLEAN"
-	$(_V)$(RM) $(ELF) $(ROM) $(BUILDDIR) compile_commands.json
+	$(_V)$(RM) $(ARCHIVE) $(BUILDDIR) compile_commands.json
 
 compile_commands.json: $(OBJS) | Makefile
 	@echo "  MERGE   compile_commands.json"
 	$(_V)$(WF)/bin/wf-compile-commands-merge $@ $(patsubst %.o,%.cc.json,$^)
+
+doc:
+	@echo "  MKDIR    build/doc"
+	$(_V)$(MKDIR) -p build/doc
+	@echo "  DOXYGEN"
+	doxygen
+
+# TODO: Write install stage.
 
 # Rules
 # -----
@@ -127,12 +119,6 @@ $(BUILDDIR)/%.c.o : %.c | $(OBJS_ASSETS)
 	@echo "  CC      $<"
 	@$(MKDIR) -p $(@D)
 	$(_V)$(CC) $(CFLAGS) -MMD -MP -MJ $(patsubst %.o,%.cc.json,$@) -c -o $@ $<
-
-$(BUILDDIR)/%.bin.o $(BUILDDIR)/%_bin.h : %.bin
-	@echo "  BIN2C   $<"
-	@$(MKDIR) -p $(@D)
-	$(_V)$(WF)/bin/wf-bin2c -a 4 $(@D) $<
-	$(_V)$(CC) $(CFLAGS) -MMD -MP -c -o $(BUILDDIR)/$*.bin.o $(BUILDDIR)/$*_bin.c
 
 $(BUILDDIR)/%.lua.o : %.lua
 	@echo "  PROCESS $<"
