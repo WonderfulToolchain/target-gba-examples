@@ -105,7 +105,7 @@ all: $(ROM) compile_commands.json
 
 $(ROM) $(ELF): $(OBJS)
 	@echo "  ROM     $@"
-	$(_V)$(ROMLINK) -o $(ROM) --output-elf $(ELF) $(ROMLINKFLAGS) -v -- $(OBJS) $(WF_CRT0) $(LDFLAGS)
+	$(_V)$(ROMLINK) -o $(ROM) --output-elf $(ELF) $(ROMLINKFLAGS) -- $(OBJS) $(WF_CRT0) $(LDFLAGS)
 
 clean:
 	@echo "  CLEAN"
