@@ -2,7 +2,7 @@
 #
 # SPDX-FileContributor: Adrian "asie" Siekierka, 2023
 
-WONDERFUL_TOOLCHAIN ?= /opt/wonderful
+export WONDERFUL_TOOLCHAIN ?= /opt/wonderful
 TARGET = gba/rom
 include $(WONDERFUL_TOOLCHAIN)/target/$(TARGET)/makedefs.mk
 
@@ -27,8 +27,8 @@ DEFINES		:=
 # Libraries
 # ---------
 
-LIBS		:= -lgba -lc
-LIBDIRS		:= $(WF_ARCH_LIBDIRS)
+LIBS		:= -lgba
+LIBDIRS		:=
 
 # Build artifacts
 # ---------------
@@ -77,9 +77,8 @@ ASFLAGS		+= -x assembler-with-cpp $(DEFINES) $(WF_ARCH_CFLAGS) \
 CFLAGS		+= -std=gnu2x $(WARNFLAGS) $(DEFINES) $(WF_ARCH_CFLAGS) \
 		   $(INCLUDEFLAGS) -ffunction-sections -fdata-sections -O2
 
-LDFLAGS		:= $(LIBDIRSFLAGS) -nostdlib \
-		   -Wl,-Map,$(MAP) -Wl,--gc-sections \
-		   $(WF_ARCH_LDFLAGS) $(LIBS) -lgcc
+LDFLAGS		:= $(LIBDIRSFLAGS) -Wl,-Map,$(MAP) -Wl,--gc-sections \
+		   $(WF_ARCH_LDFLAGS) $(LIBS)
 
 BUILDROMFLAGS	:=
 
@@ -105,7 +104,7 @@ all: $(ROM) compile_commands.json
 
 $(ROM) $(ELF): $(OBJS)
 	@echo "  ROM     $@"
-	$(_V)$(ROMLINK) -o $(ROM) --output-elf $(ELF) $(ROMLINKFLAGS) -- $(OBJS) $(WF_CRT0) $(LDFLAGS)
+	$(_V)$(ROMLINK) -o $(ROM) --output-elf $(ELF) $(ROMLINKFLAGS) -- $(OBJS) $(LDFLAGS)
 
 clean:
 	@echo "  CLEAN"
