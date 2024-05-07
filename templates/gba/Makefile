@@ -77,7 +77,7 @@ ASFLAGS		+= -x assembler-with-cpp $(DEFINES) $(WF_ARCH_CFLAGS) \
 CFLAGS		+= -std=gnu2x $(WARNFLAGS) $(DEFINES) $(WF_ARCH_CFLAGS) \
 		   $(INCLUDEFLAGS) -ffunction-sections -fdata-sections -O2
 
-LDFLAGS		:= $(LIBDIRSFLAGS) -Wl,-Map,$(MAP) -Wl,--gc-sections \
+LDFLAGS		:= $(LIBDIRSFLAGS) $(DEFINES) -Wl,-Map,$(MAP) -Wl,--gc-sections \
 		   $(WF_ARCH_LDFLAGS) $(LIBS)
 
 BUILDROMFLAGS	:=
