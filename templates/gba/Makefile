@@ -60,6 +60,7 @@ ifneq ($(CBINDIRS),)
 endif
 SOURCES_S	:= $(shell find -L $(SOURCEDIRS) -name "*.s")
 SOURCES_C	:= $(shell find -L $(SOURCEDIRS) -name "*.c")
+SOURCES_CPP	:= $(shell find -L $(SOURCEDIRS) -name "*.cpp")
 
 # Compiler and linker flags
 # -------------------------
@@ -74,8 +75,12 @@ LIBDIRSFLAGS	:= $(foreach path,$(LIBDIRS),-L$(path)/lib)
 ASFLAGS		+= -x assembler-with-cpp $(DEFINES) $(WF_ARCH_CFLAGS) \
 		   $(INCLUDEFLAGS) -ffunction-sections -fdata-sections
 
-CFLAGS		+= -std=gnu2x $(WARNFLAGS) $(DEFINES) $(WF_ARCH_CFLAGS) \
+CFLAGS		+= -std=gnu23 $(WARNFLAGS) $(DEFINES) $(WF_ARCH_CFLAGS) \
 		   $(INCLUDEFLAGS) -ffunction-sections -fdata-sections -O2
+
+CXXFLAGS	+= -std=gnu++23 $(WARNFLAGS) $(DEFINES) $(WF_ARCH_CFLAGS) \
+		   $(INCLUDEFLAGS) -ffunction-sections -fdata-sections -O2 \
+		   -fno-exceptions -fno-rtti -flto -ffat-lto-objects
 
 LDFLAGS		:= $(LIBDIRSFLAGS) $(DEFINES) -Wl,-Map,$(MAP) -Wl,--gc-sections \
 		   $(WF_ARCH_LDFLAGS) $(LIBS)
@@ -89,7 +94,8 @@ OBJS_ASSETS	:= $(addsuffix .o,$(addprefix $(BUILDDIR)/,$(SOURCES_CBIN))) \
 		   $(addsuffix .o,$(addprefix $(BUILDDIR)/,$(SOURCES_WFPROCESS)))
 
 OBJS_SOURCES	:= $(addsuffix .o,$(addprefix $(BUILDDIR)/,$(SOURCES_S))) \
-		   $(addsuffix .o,$(addprefix $(BUILDDIR)/,$(SOURCES_C)))
+		   $(addsuffix .o,$(addprefix $(BUILDDIR)/,$(SOURCES_C))) \
+		   $(addsuffix .o,$(addprefix $(BUILDDIR)/,$(SOURCES_CPP)))
 
 OBJS		:= $(OBJS_ASSETS) $(OBJS_SOURCES)
 
@@ -126,6 +132,11 @@ $(BUILDDIR)/%.c.o : %.c | $(OBJS_ASSETS)
 	@echo "  CC      $<"
 	@$(MKDIR) -p $(@D)
 	$(_V)$(CC) $(CFLAGS) -MMD -MP -MJ $(patsubst %.o,%.cc.json,$@) -c -o $@ $<
+
+$(BUILDDIR)/%.cpp.o : %.cpp | $(OBJS_ASSETS)
+	@echo "  CXX     $<"
+	@$(MKDIR) -p $(@D)
+	$(_V)$(CXX) $(CXXFLAGS) -MMD -MP -MJ $(patsubst %.o,%.cc.json,$@) -c -o $@ $<
 
 $(BUILDDIR)/%.bin.o $(BUILDDIR)/%_bin.h : %.bin
 	@echo "  BIN2C   $<"
