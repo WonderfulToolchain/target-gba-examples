@@ -104,7 +104,7 @@ DEPS		:= $(OBJS:.o=.d)
 # Targets
 # -------
 
-.PHONY: all clean
+.PHONY: all clean usage
 
 all: $(ROM) compile_commands.json
 
@@ -115,6 +115,9 @@ $(ROM) $(ELF): $(OBJS)
 clean:
 	@echo "  CLEAN"
 	$(_V)$(RM) $(ELF) $(ROM) $(BUILDDIR) compile_commands.json
+
+usage: $(ELF)
+	$(_V)$(ROMUSAGE) $<
 
 compile_commands.json: $(OBJS) | Makefile
 	@echo "  MERGE   compile_commands.json"
